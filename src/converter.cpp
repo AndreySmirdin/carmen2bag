@@ -2,20 +2,20 @@
 
 
 Converter::Converter(char *in, char *out, char *params) {
-    ifs.exceptions(std::ifstream::badbit);
-    ifs.open(in);
+    ifs = std::ifstream(in);
+    if (!ifs)
+        throw std::logic_error("File doesn`t exist.");
+
     bag.open(out, rosbag::bagmode::Write);
     ofs = std::ofstream(params);
 
     stamp = ros::Time::now();
-    ros::param::param<double>("~global_rate", rate, 40);
 
-    ros::param::param<std::string>("~tf_topic", tf_topic, "/tf");
+    ros::param::param<double>("~global_rate", rate, 40);
 
     ros::param::param<std::string>("~robot_link", robot_link, "base_link");
     ros::param::param<std::string>("~odom_link", odom_link, "odom");
     ros::param::param<std::string>("~odom_robot_link", odom_robot_link, "odom_robot_link");
-    ros::param::param<std::string>("~trueodom_link", true_odom_link, "gt_odom");
 
     ros::param::param<std::string>("~ROBOTLASER1_link", ROBOTLASER1_link, "ROBOTLASER1_link");
 
@@ -23,7 +23,6 @@ Converter::Converter(char *in, char *out, char *params) {
     links = {{"ROBOT",       robot_link},
              {"ODOM",        odom_link},
              {"ROBOTODOM",   odom_robot_link},
-             {"TRUEPOS",     true_odom_link},
              {"ROBOTLASER1", ROBOTLASER1_link}};
 }
 
@@ -40,7 +39,7 @@ void Converter::convert() {
     int cnt = 0;
 
     while (ifs.good()) {
-        ifs >> data;
+        ifs >> data; // Reading next topic.
 
         if (data == "#")
             getline(ifs, data); // Skip line.
@@ -55,12 +54,17 @@ void Converter::convert() {
 
             bag.write("/RAWLASER1", laser_msg.header.stamp, laser_msg);
             laser_msg.header.seq++;
-        } else if (data == "ROBOTLASER1") {
+
+        }
+
+        else if (data == "ROBOTLASER1") {
             handleRobotLaserMsg();
 
             bag.write("/ROBOTLASER1", laser_msg.header.stamp, laser_msg);
             laser_msg.header.seq++;
+
         }
+
         else if (data == "ODOM") {
             handleOdom();
 
@@ -70,8 +74,8 @@ void Converter::convert() {
             pose_msg.header.seq++;
             tf_odom_robot_msg.header.seq++;
 
-
         }
+
         else
             continue;
 
@@ -80,6 +84,8 @@ void Converter::convert() {
 
         std::cout << "Line " << ++cnt << " was successfully converted.\n";
     }
+
+    std::cout << "Convertation has been finished!";
 }
 
 
@@ -120,38 +126,7 @@ void Converter::handleOdom() {
 void Converter::handleLaserMsg() {
     laser_msg.header.frame_id = "base_link";
     readRangesInfo();
-    /*float data1, angle_min, angle, angle_increment, range_max, data6, data7;
-    int num_range_readings;
 
-    ifs >> data1 >> angle_min >> angle >> angle_increment >> range_max >> data6 >> data7 >> num_range_readings;
-
-    laser_msg.angle_increment = angle_increment;
-    laser_msg.angle_min = angle_min;
-    laser_msg.angle_max = angle_min + angle;
-    laser_msg.range_min = 0;
-    laser_msg.range_max = range_max;
-
-    std::vector<float> ranges;
-
-    float value;
-    for (int i = 0; i < num_range_readings; i++) {
-        ifs >> value;
-        ranges.push_back(value);
-    }
-
-    float factor_angle_fitting = laser_msg.angle_increment / 2;
-    while ((round((laser_msg.angle_max - laser_msg.angle_min) / laser_msg.angle_increment) + 1) != num_range_readings) {
-        if ((round((laser_msg.angle_max - laser_msg.angle_min) / laser_msg.angle_increment) + 1) < num_range_readings)
-            laser_msg.angle_min = laser_msg.angle_min + factor_angle_fitting;
-
-        else
-            laser_msg.angle_max = laser_msg.angle_max - factor_angle_fitting;
-
-        factor_angle_fitting = factor_angle_fitting / 2;
-    }
-
-    laser_msg.ranges = ranges;
-    ranges.clear();*/
     std::vector<float> ranges;
     float value;
 
@@ -176,38 +151,6 @@ void Converter::handleRobotLaserMsg() {
 
     laser_msg.header.frame_id = robot_link;
     readRangesInfo();
-    /*float data1, angle_min, angle, angle_increment, range_max, data6, data7;
-    ifs >> data1 >> angle_min >> angle >> angle_increment >> range_max >> data6 >> data7;
-
-    laser_msg.angle_increment = angle_increment;
-    laser_msg.angle_min = angle_min + laser_msg.angle_increment / 2;
-    laser_msg.angle_max = angle_min + angle - laser_msg.angle_increment / 2;
-    laser_msg.range_min = 0;
-    laser_msg.range_max = range_max;
-
-    std::vector<float> ranges;
-
-    int num_range_readings;
-    ifs >> num_range_readings;
-
-    float value;
-    for (int i = 0; i < num_range_readings; i++) {
-        ifs >> value;
-        ranges.push_back(value);
-    }
-
-    laser_msg.ranges = ranges;
-
-    float factor_angle_fitting = laser_msg.angle_increment / 2;
-    while ((round((laser_msg.angle_max - laser_msg.angle_min) / laser_msg.angle_increment) + 1) != num_range_readings) {
-        if ((round((laser_msg.angle_max - laser_msg.angle_min) / laser_msg.angle_increment) + 1) < num_range_readings)
-            laser_msg.angle_min = laser_msg.angle_min - factor_angle_fitting;
-
-        else
-            laser_msg.angle_max = laser_msg.angle_max - factor_angle_fitting;
-
-        factor_angle_fitting = factor_angle_fitting / 2;
-    }*/
 
     float info;
     for (int i = 0; i < 12; i++) // Don`t need next 12 fields.

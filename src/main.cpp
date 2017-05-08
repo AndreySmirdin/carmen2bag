@@ -14,8 +14,8 @@ int main(int argc, char **argv) {
         Converter converter(argv[1], argv[2], argv[3]);
         converter.convert();
     }
-    catch(std::ifstream::failure e) {
-        std::cout << "File doesn`t exist.";
+    catch(std::logic_error e) {
+        std::cout << e.what();
     }
     return 0;
 }

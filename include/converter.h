@@ -1,19 +1,14 @@
-#include <csignal>
 #include <map>
-#include <limits>
 #include <fstream>
-#include <iomanip>
 #include <vector>
 
 #include "ros/ros.h"
 #include "sensor_msgs/LaserScan.h"
 
-#include "geometry_msgs/Twist.h"
 #include "geometry_msgs/Pose.h"
 #include "geometry_msgs/PoseStamped.h"
 #include "tf/tf.h"
 #include "tf/transform_listener.h"
-#include <tf/transform_broadcaster.h>
 
 #include <rosbag/bag.h>
 #include <std_msgs/Int32.h>
@@ -38,7 +33,7 @@ class Converter{
     ros::Time stamp;
     double rate;
 
-    std::string tf_topic, robot_link, odom_link, odom_robot_link, true_odom_link, ROBOTLASER1_link;
+    std::string tf_topic, robot_link, odom_link, odom_robot_link, ROBOTLASER1_link;
 
     std::map<std::string, std::string> links;
 
